@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, QueryList, ViewChildren } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SignalFieldComponent } from './signal-field.component';
 
@@ -11,6 +11,8 @@ interface FieldNote {
   className: string;
   accent: string;
 }
+
+type Theme = 'dark' | 'light';
 
 @Component({
   selector: 'lf-root',
@@ -25,7 +27,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   menuOpen = false;
   formSent = false;
+  theme: Theme = 'dark';
   private revealObserver?: IntersectionObserver;
+  private themeMediaQuery?: MediaQueryList;
+  private readonly themeStorageKey = 'lumen-field-theme';
+
+  constructor(private readonly changeDetector: ChangeDetectorRef) {}
 
   readonly fieldNotes: FieldNote[] = [
     {
@@ -58,6 +65,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   ];
 
   ngAfterViewInit(): void {
+    this.initializeTheme();
     if (!('IntersectionObserver' in window)) {
       this.revealItems.forEach((item) => item.nativeElement.classList.add('is-visible'));
       return;
@@ -76,6 +84,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.revealObserver?.disconnect();
+    this.themeMediaQuery?.removeEventListener('change', this.handleSystemThemeChange);
+  }
+
+  toggleTheme(): void {
+    this.setTheme(this.theme === 'dark' ? 'light' : 'dark', true);
   }
 
   toggleMenu(): void {
@@ -89,5 +102,41 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   joinDispatch(event: Event): void {
     event.preventDefault();
     this.formSent = true;
+  }
+
+  private initializeTheme(): void {
+    this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const storedTheme = this.readStoredTheme();
+    this.setTheme(storedTheme ?? (this.themeMediaQuery.matches ? 'light' : 'dark'), false);
+    this.themeMediaQuery.addEventListener('change', this.handleSystemThemeChange);
+  }
+
+  private readonly handleSystemThemeChange = (event: MediaQueryListEvent): void => {
+    if (!this.readStoredTheme()) {
+      this.setTheme(event.matches ? 'light' : 'dark', false);
+      this.changeDetector.markForCheck();
+    }
+  };
+
+  private setTheme(theme: Theme, persist: boolean): void {
+    this.theme = theme;
+    document.documentElement.dataset['theme'] = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f4f1e8' : '#0b1014');
+    if (persist) {
+      try {
+        window.localStorage.setItem(this.themeStorageKey, theme);
+      } catch {
+        // Storage can be unavailable in privacy-restricted contexts.
+      }
+    }
+  }
+
+  private readStoredTheme(): Theme | undefined {
+    try {
+      const storedTheme = window.localStorage.getItem(this.themeStorageKey);
+      return storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : undefined;
+    } catch {
+      return undefined;
+    }
   }
 }
