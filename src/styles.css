@@ -1,0 +1,58 @@
+:root {
+  color-scheme: dark;
+  --ink: #0b1014;
+  --ink-soft: #121a1e;
+  --paper: #e8ece3;
+  --paper-soft: #c8d0c7;
+  --line: rgba(232, 236, 227, 0.18);
+  --line-dark: rgba(11, 16, 20, 0.16);
+  --acid: #c8f16a;
+  --rust: #db725c;
+  --sky: #9fc4cf;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Manrope', sans-serif;
+  --serif: 'Newsreader', serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--ink);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--acid);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--acid);
+  outline-offset: 5px;
+}
