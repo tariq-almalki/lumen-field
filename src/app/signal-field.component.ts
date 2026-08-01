@@ -13,9 +13,20 @@ import * as THREE from 'three';
         <div class="fallback-core"><span>LF</span></div>
         <p>Signal field / offline view</p>
       </div>
-      <div class="scene-caption" aria-hidden="true">
-        <span>Field study 01</span>
-        <span>Rot. 04° 17′ 22″</span>
+      <div class="scene-caption">
+        <span aria-hidden="true">Field study 01</span>
+        <button
+          class="scene-interaction"
+          type="button"
+          aria-label="Rotate the green signal core with the arrow keys"
+          title="Use arrow keys to rotate the green signal core"
+          (click)="nudgeCoreRotation(0, 0.2)"
+          (keydown)="handleKeyRotation($event)"
+        >
+          <span class="scene-interaction__mark" aria-hidden="true">↻</span>
+          <span>Rotate core</span>
+        </button>
+        <span aria-hidden="true">Rot. 04° 17′ 22″</span>
       </div>
     </div>
   `,
@@ -32,6 +43,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
   private scene?: THREE.Scene;
   private camera?: THREE.PerspectiveCamera;
   private root?: THREE.Group;
+  private coreGroup?: THREE.Group;
   private animationFrame = 0;
   private resizeObserver?: ResizeObserver;
   private readonly pointer = new THREE.Vector2(0.15, -0.1);
@@ -40,6 +52,10 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
   private hidden = false;
   private disposed = false;
   private lastRenderTime = 0;
+  private dragging = false;
+  private activePointerId?: number;
+  private readonly dragStart = new THREE.Vector2();
+  private readonly coreRotationStart = new THREE.Euler();
 
   constructor(private readonly changeDetector: ChangeDetectorRef) {}
 
@@ -70,6 +86,9 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
     this.camera.position.set(0, 0.12, 7.2);
     this.root = new THREE.Group();
     this.scene.add(this.root);
+    this.coreGroup = new THREE.Group();
+    this.coreGroup.rotation.set(0.08, -0.18, 0.02);
+    this.root.add(this.coreGroup);
 
     try {
       this.renderer = new THREE.WebGLRenderer({
@@ -93,6 +112,9 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
     this.resizeObserver.observe(this.frameRef.nativeElement);
     this.resize();
     this.frameRef.nativeElement.addEventListener('pointermove', this.handlePointerMove, { passive: true });
+    this.frameRef.nativeElement.addEventListener('pointerdown', this.handlePointerDown, { passive: true });
+    this.frameRef.nativeElement.addEventListener('pointerup', this.handlePointerUp, { passive: true });
+    this.frameRef.nativeElement.addEventListener('pointercancel', this.handlePointerUp, { passive: true });
     this.frameRef.nativeElement.addEventListener('pointerleave', this.handlePointerLeave, { passive: true });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { passive: true });
     this.renderFrame(0);
@@ -128,7 +150,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       opacity: 0.92
     });
     const core = new THREE.Mesh(coreGeometry, coreMaterial);
-    this.root.add(core);
+    this.coreGroup?.add(core);
 
     const wireGeometry = new THREE.IcosahedronGeometry(1.18, 3);
     const wireMaterial = new THREE.MeshBasicMaterial({
@@ -139,7 +161,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
     });
     const wire = new THREE.Mesh(wireGeometry, wireMaterial);
     wire.rotation.set(0.28, 0.42, 0.08);
-    this.root.add(wire);
+    this.coreGroup?.add(wire);
 
     const haloGeometry = new THREE.SphereGeometry(1.32, 24, 16);
     const haloMaterial = new THREE.MeshBasicMaterial({
@@ -150,7 +172,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       blending: THREE.AdditiveBlending,
       depthWrite: false
     });
-    this.root.add(new THREE.Mesh(haloGeometry, haloMaterial));
+    this.coreGroup?.add(new THREE.Mesh(haloGeometry, haloMaterial));
 
     const orbitMaterial = new THREE.LineBasicMaterial({
       color: 0xbfd4d1,
@@ -263,6 +285,55 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
     node.position.set(Math.cos(angle) * major, Math.sin(angle) * minor, 0);
   }
 
+  private readonly handlePointerDown = (event: PointerEvent): void => {
+    if (!this.coreGroup || event.target instanceof HTMLButtonElement || (event.pointerType === 'mouse' && event.button !== 0)) {
+      return;
+    }
+    this.dragging = true;
+    this.activePointerId = event.pointerId;
+    this.dragStart.set(event.clientX, event.clientY);
+    this.coreRotationStart.copy(this.coreGroup.rotation);
+    this.canvasRef.nativeElement.style.cursor = 'grabbing';
+    this.canvasRef.nativeElement.setPointerCapture?.(event.pointerId);
+  };
+
+  private readonly handlePointerUp = (event: PointerEvent): void => {
+    if (!this.dragging || event.pointerId !== this.activePointerId) {
+      return;
+    }
+    this.dragging = false;
+    this.activePointerId = undefined;
+    this.canvasRef.nativeElement.style.cursor = 'grab';
+    if (this.canvasRef.nativeElement.hasPointerCapture?.(event.pointerId)) {
+      this.canvasRef.nativeElement.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  nudgeCoreRotation(deltaX: number, deltaY: number): void {
+    if (!this.coreGroup) {
+      return;
+    }
+    this.coreGroup.rotation.x += deltaX;
+    this.coreGroup.rotation.y += deltaY;
+  }
+
+  handleKeyRotation(event: KeyboardEvent): void {
+    const step = event.shiftKey ? 0.22 : 0.1;
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      this.nudgeCoreRotation(0, -step);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      this.nudgeCoreRotation(0, step);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.nudgeCoreRotation(-step, 0);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      this.nudgeCoreRotation(step, 0);
+    }
+  }
+
   private resize(): void {
     if (!this.renderer || !this.camera) {
       return;
@@ -280,6 +351,12 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
   }
 
   private readonly handlePointerMove = (event: PointerEvent): void => {
+    if (this.dragging && event.pointerId === this.activePointerId && this.coreGroup) {
+      const dragScale = 0.008;
+      this.coreGroup.rotation.y = this.coreRotationStart.y + (event.clientX - this.dragStart.x) * dragScale;
+      this.coreGroup.rotation.x = this.coreRotationStart.x + (event.clientY - this.dragStart.y) * dragScale;
+      return;
+    }
     if (this.reducedMotion) {
       return;
     }
@@ -289,6 +366,9 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
   };
 
   private readonly handlePointerLeave = (): void => {
+    if (this.dragging) {
+      return;
+    }
     this.targetPointer.set(0.15, -0.1);
   };
 
@@ -314,6 +394,9 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
 
   private disposeScene(): void {
     this.frameRef?.nativeElement.removeEventListener('pointermove', this.handlePointerMove);
+    this.frameRef?.nativeElement.removeEventListener('pointerdown', this.handlePointerDown);
+    this.frameRef?.nativeElement.removeEventListener('pointerup', this.handlePointerUp);
+    this.frameRef?.nativeElement.removeEventListener('pointercancel', this.handlePointerUp);
     this.frameRef?.nativeElement.removeEventListener('pointerleave', this.handlePointerLeave);
     this.scene?.traverse((object) => {
       const mesh = object as THREE.Mesh;
@@ -330,6 +413,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
     this.scene = undefined;
     this.camera = undefined;
     this.root = undefined;
+    this.coreGroup = undefined;
     this.renderer = undefined;
   }
 }
