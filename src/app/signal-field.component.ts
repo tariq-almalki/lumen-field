@@ -39,6 +39,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
   private reducedMotion = false;
   private hidden = false;
   private disposed = false;
+  private lastRenderTime = 0;
 
   constructor(private readonly changeDetector: ChangeDetectorRef) {}
 
@@ -164,19 +165,20 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       blending: THREE.AdditiveBlending
     });
     const orbitData = [
-      { radius: 1.52, scale: [1.4, 0.47, 1], rotation: [0.45, 0.1, -0.24], material: orbitMaterial },
-      { radius: 1.72, scale: [1.25, 0.55, 1], rotation: [-0.1, 0.48, 0.72], material: acidOrbitMaterial },
-      { radius: 1.92, scale: [1.42, 0.34, 1], rotation: [1.02, -0.32, -0.42], material: orbitMaterial }
+      { major: 1.92, minor: 1.44, rotation: [0.45, 0.1, -0.24], material: orbitMaterial },
+      { major: 2.18, minor: 1.58, rotation: [-0.1, 0.48, 0.72], material: acidOrbitMaterial },
+      { major: 2.48, minor: 1.72, rotation: [1.02, -0.32, -0.42], material: orbitMaterial }
     ] as const;
 
     orbitData.forEach((item, index) => {
-      const orbitPoints = new THREE.EllipseCurve(0, 0, item.radius, item.radius * 0.6, 0, Math.PI * 2, false, 0)
+      const orbitGroup = new THREE.Group();
+      orbitGroup.rotation.set(item.rotation[0], item.rotation[1], item.rotation[2]);
+
+      const orbitPoints = new THREE.EllipseCurve(0, 0, item.major, item.minor, 0, Math.PI * 2, false, 0)
         .getPoints(96)
         .map((point) => new THREE.Vector3(point.x, point.y, 0));
       const orbit = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(orbitPoints), item.material);
-      orbit.scale.set(item.scale[0], item.scale[1], item.scale[2]);
-      orbit.rotation.set(item.rotation[0], item.rotation[1], item.rotation[2]);
-      this.root?.add(orbit);
+      orbitGroup.add(orbit);
 
       const nodeGeometry = new THREE.SphereGeometry(index === 1 ? 0.075 : 0.05, 10, 8);
       const nodeMaterial = new THREE.MeshBasicMaterial({
@@ -186,9 +188,10 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       });
       const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
       const angle = index === 0 ? 1.2 : index === 1 ? -0.42 : 2.56;
-      node.position.set(Math.cos(angle) * item.radius * item.scale[0], Math.sin(angle) * item.radius * item.scale[1], (index - 1) * 0.11);
-      node.userData = { orbit, angle, radius: item.radius, scale: item.scale, speed: 0.22 + index * 0.06 };
-      this.root?.add(node);
+      node.position.set(Math.cos(angle) * item.major, Math.sin(angle) * item.minor, 0.025);
+      orbitGroup.userData = { node, angle, major: item.major, minor: item.minor, speed: 0.22 + index * 0.06 };
+      orbitGroup.add(node);
+      this.root?.add(orbitGroup);
     });
 
     const dust = new THREE.BufferGeometry();
@@ -234,16 +237,18 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
 
     const seconds = time * 0.001;
     if (!this.reducedMotion) {
+      const frameDelta = this.lastRenderTime > 0 ? Math.min(time - this.lastRenderTime, 50) : 16.67;
+      this.lastRenderTime = time;
       this.pointer.lerp(this.targetPointer, 0.035);
       this.root.rotation.y = seconds * 0.075 + this.pointer.x * 0.1;
       this.root.rotation.x = Math.sin(seconds * 0.22) * 0.035 + this.pointer.y * 0.08;
       this.root.rotation.z = Math.cos(seconds * 0.18) * 0.02;
       this.root.children.forEach((child) => {
-        const data = child.userData as { orbit?: THREE.LineLoop; angle?: number; radius?: number; scale?: readonly [number, number, number]; speed?: number };
-        if (data.orbit && data.angle !== undefined && data.radius !== undefined && data.scale && data.speed) {
-          data.angle += 0.001 * data.speed * 16;
-          child.position.x = Math.cos(data.angle) * data.radius * data.scale[0];
-          child.position.y = Math.sin(data.angle) * data.radius * data.scale[1];
+        const data = child.userData as { node?: THREE.Mesh; angle?: number; major?: number; minor?: number; speed?: number };
+        if (data.node && data.angle !== undefined && data.major !== undefined && data.minor !== undefined && data.speed) {
+          data.angle += frameDelta * 0.001 * data.speed;
+          data.node.position.x = Math.cos(data.angle) * data.major;
+          data.node.position.y = Math.sin(data.angle) * data.minor;
         }
       });
     }
