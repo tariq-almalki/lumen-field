@@ -1,0 +1,141 @@
+<div class="site-shell">
+  <header class="site-header" [class.site-header--menu-open]="menuOpen">
+    <a class="wordmark" href="#top" (click)="closeMenu()" aria-label="Lumen Field home">
+      <span class="wordmark-mark" aria-hidden="true">◌</span>
+      <span>Lumen<br>Field</span>
+    </a>
+
+    <nav id="main-nav" class="main-nav" [class.main-nav--open]="menuOpen" aria-label="Main navigation">
+      <a href="#manifesto" (click)="closeMenu()"><span>01</span> Manifesto</a>
+      <a href="#studies" (click)="closeMenu()"><span>02</span> Field studies</a>
+      <a href="#practice" (click)="closeMenu()"><span>03</span> The practice</a>
+    </nav>
+
+    <a class="header-action" href="#contact" (click)="closeMenu()">
+      <span>Enter the field</span>
+      <span class="arrow-mark" aria-hidden="true">↗</span>
+    </a>
+
+    <button class="menu-toggle" type="button" (click)="toggleMenu()" [attr.aria-expanded]="menuOpen" aria-controls="main-nav">
+      <span>{{ menuOpen ? 'Close' : 'Menu' }}</span>
+      <span class="menu-lines" aria-hidden="true"><i></i><i></i></span>
+    </button>
+  </header>
+
+  <main id="top">
+    <section class="hero-section" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">A living archive / 2024—∞</p>
+        <h1 id="hero-title">Notes from<br><em>the edge</em><br>of visible.</h1>
+        <p class="hero-intro">Lumen Field follows light into the places where it changes shape—between weather and memory, evidence and feeling.</p>
+        <a class="text-link" href="#manifesto">Read the premise <span aria-hidden="true">↓</span></a>
+      </div>
+
+      <div class="hero-scene" aria-label="An interactive 3D signal field">
+        <lf-signal-field></lf-signal-field>
+      </div>
+
+      <div class="hero-meta" aria-hidden="true">
+        <span class="meta-line"></span>
+        <span>31.208° N&nbsp;&nbsp; 35.271° E</span>
+        <span class="hero-scroll">Scroll to observe <b>↓</b></span>
+      </div>
+    </section>
+
+    <section class="manifesto-section section-grid reveal" id="manifesto" #reveal>
+      <div class="section-kicker"><span>01</span><span>Manifesto</span></div>
+      <div class="manifesto-body">
+        <p class="large-statement">We collect the <em>almost.</em><br> The glint before the storm.<br> The warmth after touch.</p>
+        <div class="manifesto-detail">
+          <p>Not a catalogue of answers. A field guide to paying closer attention.</p>
+          <p class="mono-note">Lumen Field is an independent, continuously unfolding record of the visible world and everything it keeps just out of sight.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="studies-section reveal" id="studies" aria-labelledby="studies-title" #reveal>
+      <div class="section-heading section-grid">
+        <div class="section-kicker"><span>02</span><span>Field studies</span></div>
+        <div>
+          <p class="eyebrow">Selected observations</p>
+          <h2 id="studies-title">Three ways<br><em>light lingers.</em></h2>
+        </div>
+        <p class="heading-note">Each study is a small act of staying. Collected slowly, in places with more horizon than instruction.</p>
+      </div>
+
+      <div class="studies-list">
+        <article class="study-row" *ngFor="let note of fieldNotes; let index = index" [style.--row-index]="index">
+          <div class="study-index mono-note">{{ note.index }}</div>
+          <div class="study-copy">
+            <p class="eyebrow">{{ note.location }} <span>—</span> {{ note.date }}</p>
+            <h3>{{ note.title }}</h3>
+            <p>{{ note.body }}</p>
+          </div>
+          <div class="study-visual" [ngClass]="note.className" [attr.aria-label]="note.title + ' visual study'">
+            <div class="study-orbit"></div>
+            <div class="study-sun"></div>
+            <div class="study-grid-lines"></div>
+            <span class="study-coordinate">{{ note.accent }}</span>
+          </div>
+          <a class="study-open" href="#contact" [attr.aria-label]="'Open ' + note.title + ' study'">View <span aria-hidden="true">↗</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="practice-section section-grid reveal" id="practice" #reveal>
+      <div class="section-kicker"><span>03</span><span>The practice</span></div>
+      <div class="practice-intro">
+        <p class="eyebrow">Our instruments are simple</p>
+        <h2>Look longer.<br><em>Carry less.</em></h2>
+        <p class="practice-summary">We make images, objects, and small digital spaces that leave room for the world to arrive.</p>
+      </div>
+      <div class="practice-list">
+        <div class="practice-item"><span>01</span><p>Observe<br><small>Begin without a conclusion.</small></p><b>↗</b></div>
+        <div class="practice-item"><span>02</span><p>Distill<br><small>Keep the signal, lose the noise.</small></p><b>↗</b></div>
+        <div class="practice-item"><span>03</span><p>Return<br><small>Make something worth revisiting.</small></p><b>↗</b></div>
+      </div>
+    </section>
+
+    <section class="quote-section reveal" #reveal>
+      <div class="quote-mark" aria-hidden="true">“</div>
+      <blockquote>Attention is a form<br>of <em>belonging.</em></blockquote>
+      <p class="quote-credit">— field note 008 / margin of the day</p>
+    </section>
+
+    <section class="contact-section reveal" id="contact" #reveal aria-labelledby="contact-title">
+      <div class="contact-glow" aria-hidden="true"></div>
+      <div class="section-kicker"><span>04</span><span>Keep in touch</span></div>
+      <div class="contact-content">
+        <p class="eyebrow">A quiet dispatch, occasionally</p>
+        <h2 id="contact-title">Stay near<br><em>the signal.</em></h2>
+        <p>New studies, field recordings, and observations for people who notice the shift in the air.</p>
+        <form class="signup-form" (submit)="joinDispatch($event)" aria-label="Join the Lumen Field dispatch">
+          <label class="sr-only" for="email">Email address</label>
+          <input id="email" type="email" placeholder="your@email.com" autocomplete="email" required>
+          <button type="submit">{{ formSent ? 'You are on the list' : 'Join the dispatch' }} <span aria-hidden="true">↗</span></button>
+        </form>
+        <p class="form-note" aria-live="polite">{{ formSent ? 'Thank you. The next letter will find you.' : 'One letter when there is something to say. Unsubscribe whenever.' }}</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-top">
+      <a class="wordmark wordmark--footer" href="#top">
+        <span class="wordmark-mark" aria-hidden="true">◌</span>
+        <span>Lumen<br>Field</span>
+      </a>
+      <p>Made between weather<br>and memory.</p>
+      <div class="footer-links">
+        <a href="#manifesto">Instagram</a>
+        <a href="#studies">Archive index</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2024 Lumen Field</span>
+      <span>All observations remain in motion.</span>
+      <span>31° 12′ 08″ N / 35° 16′ 16″ E</span>
+    </div>
+  </footer>
+</div>
