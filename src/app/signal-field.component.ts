@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Input, OnChanges, OnDestroy, SimpleChanges, ViewChild } from '@angular/core';
 import * as THREE from 'three';
 
 @Component({
@@ -33,9 +33,11 @@ import * as THREE from 'three';
   styleUrl: './signal-field.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SignalFieldComponent implements AfterViewInit, OnDestroy {
+export class SignalFieldComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('sceneFrame', { static: true }) private readonly frameRef!: ElementRef<HTMLDivElement>;
   @ViewChild('sceneCanvas', { static: true }) private readonly canvasRef!: ElementRef<HTMLCanvasElement>;
+
+  @Input() theme: 'dark' | 'light' = 'dark';
 
   showFallback = false;
 
@@ -56,8 +58,20 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
   private activePointerId?: number;
   private readonly dragStart = new THREE.Vector2();
   private readonly coreRotationStart = new THREE.Euler();
+  private coreMaterial?: THREE.MeshStandardMaterial;
+  private wireMaterial?: THREE.MeshBasicMaterial;
+  private haloMaterial?: THREE.MeshBasicMaterial;
+  private orbitMaterial?: THREE.LineBasicMaterial;
+  private acidOrbitMaterial?: THREE.LineBasicMaterial;
+  private readonly nodeMaterials: THREE.MeshBasicMaterial[] = [];
 
   constructor(private readonly changeDetector: ChangeDetectorRef) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['theme'] && this.renderer) {
+      this.applySceneTheme();
+    }
+  }
 
   ngAfterViewInit(): void {
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -149,6 +163,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       transparent: true,
       opacity: 0.92
     });
+    this.coreMaterial = coreMaterial;
     const core = new THREE.Mesh(coreGeometry, coreMaterial);
     this.coreGroup?.add(core);
 
@@ -159,6 +174,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       transparent: true,
       opacity: 0.22
     });
+    this.wireMaterial = wireMaterial;
     const wire = new THREE.Mesh(wireGeometry, wireMaterial);
     wire.rotation.set(0.28, 0.42, 0.08);
     this.coreGroup?.add(wire);
@@ -172,6 +188,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       blending: THREE.AdditiveBlending,
       depthWrite: false
     });
+    this.haloMaterial = haloMaterial;
     this.coreGroup?.add(new THREE.Mesh(haloGeometry, haloMaterial));
 
     const orbitMaterial = new THREE.LineBasicMaterial({
@@ -180,12 +197,14 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       opacity: 0.34,
       blending: THREE.AdditiveBlending
     });
+    this.orbitMaterial = orbitMaterial;
     const acidOrbitMaterial = new THREE.LineBasicMaterial({
       color: 0xc8f16a,
       transparent: true,
       opacity: 0.7,
       blending: THREE.AdditiveBlending
     });
+    this.acidOrbitMaterial = acidOrbitMaterial;
     const orbitData = [
       { major: 1.92, minor: 1.44, rotation: [0.45, 0.1, -0.24], material: orbitMaterial },
       { major: 2.18, minor: 1.58, rotation: [-0.1, 0.48, 0.72], material: acidOrbitMaterial },
@@ -208,6 +227,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
         transparent: true,
         opacity: index === 1 ? 0.96 : 0.78
       });
+      this.nodeMaterials.push(nodeMaterial);
       const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
       const angle = index === 0 ? 1.2 : index === 1 ? -0.42 : 2.56;
       this.positionNodeOnOrbit(node, angle, item.major, item.minor);
@@ -215,6 +235,8 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       orbitGroup.add(node);
       this.root?.add(orbitGroup);
     });
+
+    this.applySceneTheme();
 
     const dust = new THREE.BufferGeometry();
     const dustCount = 420;
@@ -240,6 +262,44 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       blending: THREE.AdditiveBlending
     });
     this.scene.add(new THREE.Points(dust, dustMaterial));
+  }
+
+  private applySceneTheme(): void {
+    const lightTheme = this.theme === 'light';
+    if (this.frameRef) {
+      this.frameRef.nativeElement.dataset['theme'] = this.theme;
+    }
+
+    this.coreMaterial?.color.set(lightTheme ? 0x7faa5a : 0x9fbf73);
+    this.coreMaterial?.emissive.set(lightTheme ? 0x385c2a : 0x405f2c);
+    if (this.coreMaterial) {
+      this.coreMaterial.emissiveIntensity = lightTheme ? 1.75 : 1.5;
+    }
+
+    this.wireMaterial?.color.set(lightTheme ? 0x426b48 : 0xd5ee9c);
+    if (this.wireMaterial) {
+      this.wireMaterial.opacity = lightTheme ? 0.48 : 0.22;
+    }
+
+    this.haloMaterial?.color.set(lightTheme ? 0x7da64c : 0xb8e67a);
+    if (this.haloMaterial) {
+      this.haloMaterial.opacity = lightTheme ? 0.12 : 0.055;
+    }
+
+    this.orbitMaterial?.color.set(lightTheme ? 0x395b58 : 0xbfd4d1);
+    if (this.orbitMaterial) {
+      this.orbitMaterial.opacity = lightTheme ? 0.62 : 0.34;
+    }
+
+    this.acidOrbitMaterial?.color.set(lightTheme ? 0x4c713e : 0xc8f16a);
+    if (this.acidOrbitMaterial) {
+      this.acidOrbitMaterial.opacity = lightTheme ? 0.82 : 0.7;
+    }
+
+    this.nodeMaterials.forEach((material, index) => {
+      material.color.set(lightTheme ? (index === 1 ? 0x4c713e : 0x355a52) : (index === 1 ? 0xc8f16a : 0xd9e9d5));
+      material.opacity = lightTheme ? (index === 1 ? 1 : 0.92) : (index === 1 ? 0.96 : 0.78);
+    });
   }
 
   private readonly animate = (time: number): void => {
