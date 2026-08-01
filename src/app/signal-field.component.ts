@@ -188,7 +188,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
       });
       const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
       const angle = index === 0 ? 1.2 : index === 1 ? -0.42 : 2.56;
-      node.position.set(Math.cos(angle) * item.major, Math.sin(angle) * item.minor, 0.025);
+      this.positionNodeOnOrbit(node, angle, item.major, item.minor);
       orbitGroup.userData = { node, angle, major: item.major, minor: item.minor, speed: 0.22 + index * 0.06 };
       orbitGroup.add(node);
       this.root?.add(orbitGroup);
@@ -247,8 +247,7 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
         const data = child.userData as { node?: THREE.Mesh; angle?: number; major?: number; minor?: number; speed?: number };
         if (data.node && data.angle !== undefined && data.major !== undefined && data.minor !== undefined && data.speed) {
           data.angle += frameDelta * 0.001 * data.speed;
-          data.node.position.x = Math.cos(data.angle) * data.major;
-          data.node.position.y = Math.sin(data.angle) * data.minor;
+          this.positionNodeOnOrbit(data.node, data.angle, data.major, data.minor);
         }
       });
     }
@@ -257,6 +256,11 @@ export class SignalFieldComponent implements AfterViewInit, OnDestroy {
     this.camera.position.y += (-this.pointer.y * 0.22 + 0.12 - this.camera.position.y) * 0.018;
     this.camera.lookAt(0, 0, 0);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  private positionNodeOnOrbit(node: THREE.Mesh, angle: number, major: number, minor: number): void {
+    // Keep the marker in the exact same local plane and parametric ellipse as its line.
+    node.position.set(Math.cos(angle) * major, Math.sin(angle) * minor, 0);
   }
 
   private resize(): void {
