@@ -1,4 +1,4 @@
-import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, QueryList, ViewChildren } from '@angular/core';
+import { AfterViewInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SignalFieldComponent } from './signal-field.component';
 
@@ -22,7 +22,7 @@ type Theme = 'dark' | 'light';
   styleUrl: './app.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AppComponent implements AfterViewInit, OnDestroy {
+export class AppComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('reveal') private readonly revealItems!: QueryList<ElementRef<HTMLElement>>;
 
   menuOpen = false;
@@ -33,6 +33,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private readonly themeStorageKey = 'lumen-field-theme';
 
   constructor(private readonly changeDetector: ChangeDetectorRef) {}
+
+  ngOnInit(): void {
+    this.initializeTheme();
+  }
 
   readonly fieldNotes: FieldNote[] = [
     {
@@ -65,7 +69,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   ];
 
   ngAfterViewInit(): void {
-    this.initializeTheme();
     if (!('IntersectionObserver' in window)) {
       this.revealItems.forEach((item) => item.nativeElement.classList.add('is-visible'));
       return;
