@@ -1,5 +1,7 @@
 :root {
   color-scheme: dark;
+  --page-bg: #0b1014;
+  --page-text: #e8ece3;
   --ink: #0b1014;
   --ink-soft: #121a1e;
   --paper: #e8ece3;
@@ -9,9 +11,54 @@
   --acid: #c8f16a;
   --rust: #db725c;
   --sky: #9fc4cf;
+  --hero-start: #0b1014;
+  --hero-mid: #10191b;
+  --hero-end: #0c1215;
+  --deep-bg: #121a1e;
+  --deep-text: #e8ece3;
+  --deep-muted: #c8d0c7;
+  --deep-line: rgba(232, 236, 227, 0.18);
+  --light-bg: #e8ece3;
+  --light-text: #0b1014;
+  --light-muted: rgba(11, 16, 20, 0.62);
+  --light-line: rgba(11, 16, 20, 0.16);
+  --quote-bg: #bfcbc1;
+  --contact-bg: #161f20;
+  --header-text: #e8ece3;
+  --header-muted: rgba(232, 236, 227, 0.68);
   --mono: 'DM Mono', monospace;
   --sans: 'Manrope', sans-serif;
   --serif: 'Newsreader', serif;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --page-bg: #f4f1e8;
+  --page-text: #1d2a26;
+  --ink: #1d2a26;
+  --ink-soft: #e6eee7;
+  --paper: #fbf8ef;
+  --paper-soft: #53615b;
+  --line: rgba(29, 42, 38, 0.18);
+  --line-dark: rgba(29, 42, 38, 0.16);
+  --acid: #607d47;
+  --rust: #ad5a4b;
+  --sky: #668f98;
+  --hero-start: #f4f1e8;
+  --hero-mid: #e8f0e8;
+  --hero-end: #fbf8ef;
+  --deep-bg: #e6eee7;
+  --deep-text: #1d2a26;
+  --deep-muted: #53615b;
+  --deep-line: rgba(29, 42, 38, 0.18);
+  --light-bg: #fbf8ef;
+  --light-text: #1d2a26;
+  --light-muted: rgba(29, 42, 38, 0.62);
+  --light-line: rgba(29, 42, 38, 0.16);
+  --quote-bg: #d8e4d8;
+  --contact-bg: #dfece1;
+  --header-text: #1d2a26;
+  --header-muted: rgba(29, 42, 38, 0.7);
 }
 
 * {
@@ -20,17 +67,18 @@
 
 html {
   scroll-behavior: smooth;
-  background: var(--ink);
+  background: var(--page-bg);
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--page-bg);
+  color: var(--page-text);
   font-family: var(--sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color 380ms ease, color 380ms ease;
 }
 
 button,
@@ -50,6 +98,22 @@ a {
 ::selection {
   background: var(--acid);
   color: var(--ink);
+}
+
+button,
+a,
+input,
+.site-shell,
+.hero-section,
+.manifesto-section,
+.studies-section,
+.practice-section,
+.quote-section,
+.contact-section,
+.site-footer {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 380ms;
+  transition-timing-function: ease;
 }
 
 :focus-visible {
